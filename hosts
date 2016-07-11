@@ -1,0 +1,10 @@
+[control]
+localhost	ansible_connection=local
+
+[onos]
+onos1	ansible_host=140.113.61.2
+onos2	ansible_host=140.113.61.3
+
+[onos:vars]
+ansible_ssh_pass=most@nctu
+
