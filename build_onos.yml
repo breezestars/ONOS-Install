@@ -1,5 +1,5 @@
 ---
-- name: Prepare enviroment for build machine
+- name: Set enviroment on build machine
   hosts: localhost
   tasks:
   - name: Add PPA
@@ -7,21 +7,25 @@
     apt_repository: repo='ppa:webupd8team/java'
 
   - name: Accept Java 8 License
-    sudo: yes
+    become: yes
     debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
 
-  - name: Install git
+  - name: Install packages
     become: yes
     apt: name={{item}} update_cache=yes
     with_items:
       - git
       - oracle-java8-installer
       - oracle-java8-set-default
+
   - name: Put source file
-    template: src=/init-onos dest=~/init-onos
+    copy: src=init-onos dest=~/init-onos
 
   - name: Pull ONOS
     git: repo=https://github.com/opennetworkinglab/onos.git dest=~/onos
+
+  - name: Put cell file
+    copy: src=cell dest=~/onos/tools/test/cells/cell
 
   - name: Download Apache Karaf 3.0.5
     command: 'wget ftp://140.113.169.97/apache-karaf-3.0.5.tar.gz -P ~/Downloads/'
@@ -39,6 +43,43 @@
     unarchive: src=~/Downloads/apache-maven-3.3.9-bin.tar.gz dest=~/Applications
 
   - name: Compile ONOS
-    shell: source ~/init-onos && cd ~/onos && mvn clean install && op
+    shell: source ~/init-onos && cd ~/onos && mvn clean install
     args:
       executable: /bin/bash
+    register: result
+    changed_when: "'[INFO] BUILD SUCCESS' in result.stdout_lines"
+
+  - name: Packing ONOS
+    shell: source ~/init-onos && onos-package
+    args:
+      executable: /bin/bash
+
+#  - local_action: copy content={{ result }} dest=~/file
+
+- name: Set enviroment on remote site
+  hosts: onos
+  tasks:
+  - name: Add PPA
+    become: yes
+    apt_repository: repo='ppa:webupd8team/java'
+
+  - name: Accept Java 8 License
+    become: yes
+    debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
+
+  - name: Install packages
+    become: yes
+    apt: name={{item}} update_cache=yes
+    with_items:
+      - git
+      - oracle-java8-installer
+      - oracle-java8-set-default
+
+- name: Deploy ONOS instance
+  hosts: localhost
+  tasks:
+  - name: Deploy ONOS instance
+    shell: source ~/init-onos && stc setup
+    args:
+      executable: /bin/bash
+

@@ -1,0 +1,5 @@
+export ONOS_NIC="140.113.61.*"
+export OC1="140.113.61.2"
+export OC2="140.113.61.2"
+export OCN="140.113.61.3"
+export ONOS_APPS="drivers,openflow"
