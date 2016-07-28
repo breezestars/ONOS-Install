@@ -82,4 +82,6 @@
     shell: source ~/init-onos && stc setup
     args:
       executable: /bin/bash
+    register: push_result
 
+  - local_action: copy content={{ push_result }} dest=~/push_file
